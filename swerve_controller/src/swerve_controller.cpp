@@ -48,12 +48,13 @@ namespace swerve_controller
           wheel_base_(0.0),
           min_steering_angle_(-M_PI),
           max_steering_angle_(M_PI),
+          invert_steering_(false),
           cmd_vel_timeout_(0.5),
           base_frame_id_("base_link"),
           enable_odom_tf_(true),
           enable_min_steering_difference_(false)
 	{
-    }
+    } 
 
     bool SwerveController::init(hardware_interface::RobotHW *robot_hw,
                                 ros::NodeHandle &root_nh,
@@ -115,6 +116,11 @@ namespace swerve_controller
         ROS_INFO_STREAM_NAMED(name_, "Minimum steering difference is "
                                         << (enable_min_steering_difference_ ? "enabled" : "disabled"));
 
+        // Set steering multiplier based on invert_steering parameter
+        controller_nh.param("invert_steering", invert_steering_, invert_steering_);
+        steering_multiplier_ = invert_steering_ ? -1.0 : 1.0; 
+        ROS_WARN_STREAM_NAMED(name_, "Steering commands will be " << (invert_steering_ ? "inverted" : "not inverted"));
+
         // Get velocity and acceleration limits from the parameter server
         controller_nh.param("linear/x/has_velocity_limits",
                             limiter_lin_.has_velocity_limits,
@@ -160,6 +166,7 @@ namespace swerve_controller
                                                                       wheel_steering_y_offset_);
         bool lookup_wheel_radius = !controller_nh.getParam("wheel_radius", wheel_radius_);
         bool lookup_wheel_base = !controller_nh.getParam("wheel_base", wheel_base_);
+
 
         if (lookup_track || lookup_wheel_steering_y_offset ||
             lookup_wheel_radius || lookup_wheel_base)
@@ -273,10 +280,10 @@ namespace swerve_controller
             std::isnan(lh_speed) || std::isnan(rh_speed))
             return;
 
-        const double lf_steering = lf_steering_joint_->getPosition();
-        const double rf_steering = rf_steering_joint_->getPosition();
-        const double lh_steering = lh_steering_joint_->getPosition();
-        const double rh_steering = rh_steering_joint_->getPosition();
+        const double lf_steering = lf_steering_joint_->getPosition() * steering_multiplier_;
+        const double rf_steering = rf_steering_joint_->getPosition() * steering_multiplier_;
+        const double lh_steering = lh_steering_joint_->getPosition() * steering_multiplier_;
+        const double rh_steering = rh_steering_joint_->getPosition() * steering_multiplier_;
         if (std::isnan(lf_steering) || std::isnan(rf_steering) ||
             std::isnan(lh_steering) || std::isnan(rh_steering))
             return;
@@ -364,6 +371,8 @@ namespace swerve_controller
             rf_steering = atan2(b, d);
             lh_steering = atan2(a, c);
             rh_steering = atan2(a, d);
+
+            // ROS_WARN_STREAM("Steering angles: LF " << lf_steering << " RF " << rf_steering << " LB " << lh_steering << " RB " << rh_steering);
         }
 
         // Invert wheel speed or brake if steering angle exceeds desired limits
@@ -397,10 +406,10 @@ namespace swerve_controller
         // Set wheels steering angles
         if (lf_steering_joint_ && rf_steering_joint_ && lh_steering_joint_ && rh_steering_joint_)
         {
-            lf_steering_joint_->setCommand(lf_steering);
-            rf_steering_joint_->setCommand(rf_steering);
-            lh_steering_joint_->setCommand(lh_steering);
-            rh_steering_joint_->setCommand(rh_steering);
+            lf_steering_joint_->setCommand(lf_steering * steering_multiplier_);
+            rf_steering_joint_->setCommand(rf_steering * steering_multiplier_);
+            lh_steering_joint_->setCommand(lh_steering * steering_multiplier_);
+            rh_steering_joint_->setCommand(rh_steering * steering_multiplier_);
         }
 
         lf_steering_last = lf_steering;
@@ -423,6 +432,12 @@ namespace swerve_controller
 
     bool SwerveController::clipSteeringAngle(double &steering, double &speed)
     {
+        // Constrain angles around [-pi, pi]
+        steering = fmod(steering + M_PI, 2 * M_PI);
+        if (steering < 0)
+            steering += 2 * M_PI;
+        steering -= M_PI;
+
         if (steering > max_steering_angle_)
         {
             if (steering - M_PI > min_steering_angle_)

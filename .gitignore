@@ -13,3 +13,9 @@
 
 # OSX Files
 .DS_Store
+
+# ROS
+.cache/
+
+# CMake Git Ignore
+compile_commands.json

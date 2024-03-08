@@ -140,6 +140,10 @@ namespace swerve_controller
         /// Range of steering angle:
         double min_steering_angle_, max_steering_angle_;
 
+        /// Multipler for the steering axis direction 
+        bool invert_steering_;
+        double steering_multiplier_;
+
         /// Timeout to consider cmd_vel commands old:
         double cmd_vel_timeout_;
 
