@@ -173,7 +173,8 @@ namespace swerve_controller
         {
             ROS_INFO_STREAM("Some geometric parameters are not provided in the config file."
                             << "Parsing from URDF!");
-            urdf_geometry_parser::UrdfGeometryParser uvk(root_nh, base_frame_id_);
+            ros::NodeHandle nh_root("/");
+            urdf_geometry_parser::UrdfGeometryParser uvk(nh_root, base_frame_id_);
             if (lookup_track)
             {
                 if (!uvk.getDistanceBetweenJoints(lf_wheel_name, rf_wheel_name, track_))
@@ -304,7 +305,7 @@ namespace swerve_controller
             // Populate odom message and publish
             if (odom_pub_->trylock())
             {
-                odom_pub_->msg_.header.stamp = time;
+                odom_pub_->msg_.header.stamp = ros::Time::now();
                 odom_pub_->msg_.pose.pose.position.x = odometry_.getX();
                 odom_pub_->msg_.pose.pose.position.y = odometry_.getY();
                 odom_pub_->msg_.pose.pose.orientation = orientation;
@@ -318,7 +319,7 @@ namespace swerve_controller
             if (enable_odom_tf_ && tf_odom_pub_->trylock())
             {
                 geometry_msgs::TransformStamped &odom_frame = tf_odom_pub_->msg_.transforms[0];
-                odom_frame.header.stamp = time;
+                odom_frame.header.stamp = ros::Time::now();
                 odom_frame.transform.translation.x = odometry_.getX();
                 odom_frame.transform.translation.y = odometry_.getY();
                 odom_frame.transform.rotation = orientation;
