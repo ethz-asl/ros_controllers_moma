@@ -137,6 +137,9 @@ namespace swerve_controller
         /// Wheel base (distance between front and rear wheel):
         double wheel_base_;
 
+        /// Steering track (distance between left and right wheels):
+        double steering_track_;
+
         /// Range of steering angle:
         double min_steering_angle_, max_steering_angle_;
 
@@ -163,17 +166,37 @@ namespace swerve_controller
         SpeedLimiter limiter_lin_;
         SpeedLimiter limiter_ang_;
 
-        double lf_steering_last;
-        double rf_steering_last;
-        double lh_steering_last;
-        double rh_steering_last;
+        double lf_speed_ {0};
+        double rf_speed_ {0};
+        double lh_speed_ {0};
+        double rh_speed_ {0};
+
+        double lf_steering_ {0};
+        double rf_steering_ {0};
+        double lh_steering_ {0};
+        double rh_steering_ {0};
+
+        double lf_steering_last_;
+        double rf_steering_last_;
+        double lh_steering_last_;
+        double rh_steering_last_;
 
     private:
         void updateOdometry(const ros::Time &time);
 
-        void updateCommand(const ros::Time &time, const ros::Duration &period);
+        void updateCommand(const ros::Time& time, const ros::Duration& period);
 
-        void brake();
+        void calculateSpeedsAndAngles(const CommandTwist& current_cmd);
+
+        void setSteeringCommands();
+
+        void setWheelCommands();
+
+        void stopWheels();
+
+        bool areAllSteeringAligned() const;
+
+        bool isSteeringAligned(double current, const double& target, const double& tolerance) const;
 
         void minSteeringDifference(double &steering, double &previous_steering, double &speed);
 
