@@ -332,7 +332,11 @@ namespace swerve_controller
         CommandTwist curr_cmd = *(command_twist_.readFromRT());
         const double dt = (time - curr_cmd.stamp).toSec();
 
-        // Brake if cmd_vel has timeout
+        // reset speeds and angles to 0
+        lf_speed_ = 0.0, rf_speed_ = 0.0, lh_speed_ = 0.0, rh_speed_ = 0.0;
+        // lf_steering_ = 0.0, rf_steering_ = 0.0, lh_steering_ = 0.0, rh_steering_ = 0.0;
+
+        // brake if cmd_vel has timeout
         if (dt > cmd_vel_timeout_)
         {
             stopWheels();
@@ -350,7 +354,7 @@ namespace swerve_controller
         last1_cmd_ = last0_cmd_;
         last0_cmd_ = curr_cmd;
 
-        // compute steering angles
+        // compute steering angles with deadband
         if ((fabs(curr_cmd.lin_x) > 0.001) || (fabs(curr_cmd.lin_y) > 0.001) ||
             (fabs(curr_cmd.ang) > 0.001))
         {
