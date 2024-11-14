@@ -160,9 +160,6 @@ namespace swerve_controller
                             limiter_ang_.min_acceleration,
                             -limiter_ang_.max_acceleration);
 
-        ROS_WARN_STREAM_NAMED(name_, "max lin vel: " << limiter_lin_.max_velocity);
-        ROS_WARN_STREAM_NAMED(name_, "max ang vel: " << limiter_ang_.max_velocity);
-
         // Get robot physical parameters from URDF or parameter server
         bool lookup_track = !controller_nh.getParam("track", track_);
         bool lookup_wheel_steering_y_offset = !controller_nh.getParam("wheel_steering_y_offset",
@@ -383,6 +380,7 @@ namespace swerve_controller
         }
 
         // set wheels steering angles
+    
         setSteeringCommands();
         setWheelCommands();
 
